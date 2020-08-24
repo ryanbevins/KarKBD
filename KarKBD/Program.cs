@@ -11,6 +11,7 @@ namespace KarKBD
         private static List<KBDButton> _buttons;
         private static List<Tuple<int, int>> _positions;
         private static byte[] _bytes;
+        private static List<KBDType> _types;
 
         // position, overflow/track value
         private static List<int> bytePositions;
@@ -22,26 +23,27 @@ namespace KarKBD
             bytePositions = new List<int>();
             _buttons = GetNoteButtons();
             _positions = GetNotePositions();
+            _types = GetNoteTypes();
 
             Console.WriteLine("Note count: {0}", _buttons.Count);
             for (var i = 0; i < _buttons.Count; i++)
                 switch (_buttons[i])
                 {
                     case KBDButton.A:
-                        Console.WriteLine("X/A POSITION: {0} OVERFLOW: {1} | LOCATION: {2}", _positions[i].Item1,
-                            _positions[i].Item2, ToHex(bytePositions[i]));
+                        Console.WriteLine("X/A POSITION: {0} | OVERFLOW: {1} | LOCATION: {2} | TYPE: {3}" , _positions[i].Item1,
+                            _positions[i].Item2, ToHex(bytePositions[i]), _types[i]);
                         break;
                     case KBDButton.B:
-                        Console.WriteLine("O/B: {0} OVERFLOW: {1} | LOCATION: {2}", _positions[i].Item1,
-                            _positions[i].Item2, ToHex(bytePositions[i]));
+                        Console.WriteLine("O/B: {0} | OVERFLOW: {1} | LOCATION: {2} | TYPE: {3}" , _positions[i].Item1,
+                            _positions[i].Item2, ToHex(bytePositions[i]), _types[i]);
                         break;
                     case KBDButton.X:
-                        Console.WriteLine("SQUARE/X: {0} OVERFLOW: {1} | LOCATION: {2}", _positions[i].Item1,
-                            _positions[i].Item2, ToHex(bytePositions[i]));
+                        Console.WriteLine("SQUARE/X: {0} | OVERFLOW: {1} | LOCATION: {2} | TYPE: {3}" , _positions[i].Item1,
+                            _positions[i].Item2, ToHex(bytePositions[i]), _types[i]);
                         break;
                     case KBDButton.Y:
-                        Console.WriteLine("TRIANGLE/Y: {0} OVERFLOW: {1} | LOCATION: {2}", _positions[i].Item1,
-                            _positions[i].Item2, ToHex(bytePositions[i]));
+                        Console.WriteLine("TRIANGLE/Y: {0} | OVERFLOW: {1} | LOCATION: {2} | TYPE: {3}" , _positions[i].Item1,
+                            _positions[i].Item2, ToHex(bytePositions[i]), _types[i]);
                         break;
                 }
 
@@ -98,6 +100,35 @@ namespace KarKBD
 
             return positionList;
         }
+        
+        // TODO: Make this into a tuple for getting note type and length if special note in the future
+        private static List<KBDType> GetNoteTypes()
+        {
+            var typeList = new List<KBDType>();
+            var startingPos = 0x30;
+            var jumpLength = 0x20;
+            for (var i = startingPos; i < _bytes.Length; i+=jumpLength)
+            {
+                switch (_bytes[i])
+                {
+                    
+                    case 0x00:
+                        typeList.Add(KBDType.REGULAR);
+                        break;
+                    case 0x01:
+                        typeList.Add(KBDType.HOLD);
+                        break;
+                    case 0x02:
+                        typeList.Add(KBDType.RAPID);
+                        break;
+                    default:
+                        typeList.Add(KBDType.ERROR);
+                        break;
+                }
+            }
+
+            return typeList;
+        }
 
         private static KBDButton FindButtonType(byte b)
         {
@@ -129,6 +160,14 @@ namespace KarKBD
             X = 0x02,
             Y = 0x03,
             NULL = 0x04
+        }
+
+        private enum KBDType : byte
+        {
+            REGULAR = 0x00,
+            HOLD = 0x01,
+            RAPID = 0x02,
+            ERROR = 0xFF
         }
     }
 }
